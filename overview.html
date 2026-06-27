@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lexicon Advanced Analytics Overview</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #151b2c;
+            --border-color: #242f47;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #34d399;
+            --accent-purple: #a855f7;
+            --accent-amber: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-main); color: var(--text-primary); padding: 40px 20px; line-height: 1.7; }
+        
+        .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+        .full-width { grid-column: span 4; }
+        .half-width { grid-column: span 2; }
+        
+        @media (max-width: 850px) {
+            .half-width, .container > .card { grid-column: span 4; }
+        }
+
+        .card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 28px; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.25); min-width: 0; }
+        
+        .header-section { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+        h1 { font-size: 30px; font-weight: 700; background: linear-gradient(to right, #fff, var(--text-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        h2 { font-size: 18px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-blue); margin-bottom: 20px; }
+
+        .btn-back { display: inline-block; text-align: center; text-decoration: none; padding: 12px 20px; background-color: transparent; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 10px; font-weight: 600; font-size: 15px; transition: all 0.2s; }
+        .btn-back:hover { background-color: rgba(255,255,255,0.05); }
+
+        /* KANBAN METRICS */
+        .metric-title { font-size: 14px; color: var(--text-secondary); font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;}
+        .metric-num { font-size: 36px; font-weight: 700; color: white; line-height: 1.1; margin-bottom: 4px; }
+
+        .chart-box { position: relative; width: 100%; height: 280px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="full-width card header-section">
+            <div>
+                <h1>CORE LEADERBOARD OVERVIEW</h1>
+                <p style="color: var(--text-secondary); font-size: 15px; margin-top: 4px;">Trung tâm đo lường hiệu suất tư duy và tăng trưởng từ vựng cốt lõi.</p>
+            </div>
+            <div>
+                <a href="index.html" class="btn-back">➔ Quay lại Không gian học tập</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="metric-title">Từ vựng độc nhất</div>
+            <div class="metric-num" id="statUnique">0</div>
+            <p style="font-size: 13px; color: var(--accent-blue);">Từ gốc không trùng lặp</p>
+        </div>
+
+        <div class="card">
+            <div class="metric-title">Tổng số ngữ cảnh</div>
+            <div class="metric-num" id="statTotalSenses">0</div>
+            <p style="font-size: 13px; color: var(--accent-green);">Nét nghĩa đã lưu trữ</p>
+        </div>
+
+        <div class="card">
+            <div class="metric-title">Hiệu suất chính xác</div>
+            <div class="metric-num" id="statAccuracy">0%</div>
+            <p style="font-size: 13px; color: var(--accent-amber);" id="statQuizCount">Chưa có lượt test</p>
+        </div>
+
+        <div class="card">
+            <div class="metric-title">Chuỗi ngày học liên tục</div>
+            <div class="metric-num" id="statStreak">0</div>
+            <p style="font-size: 13px; color: var(--accent-purple);">Ngày học bền bỉ liên tiếp</p>
+        </div>
+
+        <div class="half-width card">
+            <h2>📈 Tiến độ nạp từ vựng mới (7 ngày gần nhất)</h2>
+            <div class="chart-box">
+                <canvas id="dailyWordsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="half-width card">
+            <h2>📊 Cơ cấu phân loại từ loại (Part of Speech)</h2>
+            <div class="chart-box">
+                <canvas id="posDistributionChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Gọi dữ liệu từ hệ thống mẹ
+        const dictionary = JSON.parse(localStorage.getItem('cleanDict_data')) || [];
+        const stats = JSON.parse(localStorage.getItem('cleanDict_stats')) || { correct: 0, total: 0 };
+        const quizHistory = JSON.parse(localStorage.getItem('cleanDict_quizHistory')) || [];
+
+        // 1. TÍNH TOÁN CÁC CHỈ SỐ KPI CHÍNH SÁC
+        const uniqueWords = new Set(dictionary.map(item => item.word.trim().toLowerCase())).size;
+        document.getElementById('statUnique').innerText = uniqueWords;
+        document.getElementById('statTotalSenses').innerText = dictionary.length;
+
+        const accuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+        document.getElementById('statAccuracy').innerText = accuracy + "%";
+        document.getElementById('statQuizCount').innerText = `Dựa trên ${stats.total} lượt kiểm tra`;
+
+        // Tính chuỗi ngày học liên tục (Streak) dựa vào dấu vết ngày nạp từ + ngày làm bài test
+        function calculateStreak() {
+            const activeDates = new Set();
+            dictionary.forEach(item => { if(item.addedAt) activeDates.add(item.addedAt); });
+            quizHistory.forEach(item => { if(item.date) activeDates.add(item.date); });
+            
+            if (activeDates.size === 0) return 0;
+            
+            const sortedDates = Array.from(activeDates).sort().reverse();
+            let streak = 0;
+            let todayStr = new Date().toISOString().split('T')[0];
+            let checkDate = new Date(todayStr);
+
+            // Nếu hôm nay không học, kiểm tra ngày hôm qua
+            if (!activeDates.has(todayStr)) {
+                checkDate.setDate(checkDate.getDate() - 1);
+                const yesterdayStr = checkDate.toISOString().split('T')[0];
+                if (!activeDates.has(yesterdayStr)) return 0;
+            }
+
+            while (true) {
+                const checkStr = checkDate.toISOString().split('T')[0];
+                if (activeDates.has(checkStr)) {
+                    streak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            return streak;
+        }
+        document.getElementById('statStreak').innerText = calculateStreak();
+
+        // 2. DỰNG BIỂU ĐỒ TIẾN ĐỘ NẠP TỪ (MỖI NGÀY HỌC ĐƯỢC BAO NHIÊU TỪ)
+        function setupDailyChart() {
+            const labels = [];
+            const dataValues = [];
+            
+            // Tạo mảng 7 ngày gần nhất
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                
+                // Định dạng hiển thị gọn nhẹ: DD/MM
+                const displayLabel = d.getDate() + '/' + (d.getMonth() + 1);
+                labels.push(displayLabel);
+                
+                // Đếm xem trong mảng từ vựng có bao nhiêu từ khớp với ngày này
+                const count = dictionary.filter(item => item.addedAt === dateStr).length;
+                dataValues.push(count);
+            }
+
+            const ctx = document.getElementById('dailyWordsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Số từ mới',
+                        data: dataValues,
+                        backgroundColor: '#38bdf8',
+                        borderRadius: 6,
+                        hoverBackgroundColor: '#34d399'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            grid: { color: '#242f47' },
+                            ticks: { color: '#94a3b8', stepSize: 1, beginAtZero: true }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 3. DỰNG BIỂU ĐỒ CƠ CẤU TỪ LOẠI
+        function setupPosChart() {
+            const posCounts = { 'Verb': 0, 'Noun': 0, 'Adj': 0, 'Adv': 0, 'Phrase': 0, 'Other': 0 };
+            dictionary.forEach(item => {
+                const pos = item.partOfSpeech || 'Other';
+                if (posCounts[pos] !== undefined) posCounts[pos]++;
+                else posCounts['Other']++;
+            });
+
+            const ctx = document.getElementById('posDistributionChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(posCounts),
+                    datasets: [{
+                        data: Object.values(posCounts),
+                        backgroundColor: ['#38bdf8', '#34d399', '#a855f7', '#f59e0b', '#f87171', '#94a3b8'],
+                        borderWidth: 2,
+                        borderColor: '#151b2c'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#f1f5f9', font: { family: 'Plus Jakarta Sans', size: 13 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Kích hoạt toàn bộ động cơ phân tích đồ họa
+        setupDailyChart();
+        setupPosChart();
+    </script>
+</body>
+</html>

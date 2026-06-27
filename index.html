@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Lexicon & Analytics Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        /* COLOR PALETTE: COMFORTABLE TECH MINIMALISM */
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #151b2c;
+            --border-color: #242f47;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #34d399;
+            --accent-red: #f87171;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--bg-main); 
+            color: var(--text-primary);
+            padding: 40px 20px;
+            line-height: 1.7;
+            font-size: 18px;
+        }
+
+        .workspace {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 850px) {
+            .workspace { grid-template-columns: 1fr; }
+        }
+
+        .full-width { grid-column: 1 / -1; }
+
+        /* THEME CARD SYSTEM */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.25);
+            min-width: 0;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #fff, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        <h2> {
+            font-size: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-blue);
+            margin-bottom: 24px;
+        }
+
+        /* INPUTS & FORM ELEMENTS */
+        .form-group { margin-bottom: 24px; }
+        .form-group label {
+            display: block;
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 16px;
+            background-color: #0b0f19;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: white;
+            font-family: inherit;
+            font-size: 17px;
+            transition: all 0.2s;
+        }
+        input[type="text"]:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        }
+        
+        select option {
+            background-color: var(--bg-card);
+            color: white;
+        }
+
+        /* BUTTONS */
+        button, .btn-link {
+            display: inline-block;
+            text-align: center;
+            text-decoration: none;
+            width: 100%;
+            padding: 16px;
+            background-color: var(--accent-blue);
+            color: #0b0f19;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+        button:hover, .btn-link:hover { opacity: 0.95; transform: translateY(-1px); }
+        
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        .btn-secondary:hover { background-color: rgba(255,255,255,0.05); }
+
+        .quiz-type-tag {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            padding: 4px 10px;
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-blue);
+            border-radius: 6px;
+            margin-bottom: 24px;
+            font-weight: 500;
+        }
+
+        /* GIAO DIỆN POPUP (MODAL) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(7, 10, 19, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background-color: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 550px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        .modal-icon { font-size: 50px; margin-bottom: 16px; }
+        .modal-title { font-size: 24px; font-weight: 700; margin-bottom: 12px; }
+        .modal-body { font-size: 18px; color: var(--text-secondary); margin-bottom: 30px; line-height: 1.6; }
+        .modal-btn { background-color: var(--border-color); color: white; font-size: 16px; }
+        .modal-btn:hover { background-color: rgba(255,255,255,0.1); }
+
+        /* KHUNG CÂU HỎI */
+        .quiz-title-label { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
+        .quiz-question-text { white-space: pre-wrap; font-size: 18px; line-height: 1.8; color: var(--text-primary); background: rgba(11, 15, 25, 0.5); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); }
+        .quiz-blank { color: var(--accent-blue); font-weight: 700; font-family: 'JetBrains Mono', monospace; background: rgba(56, 189, 248, 0.15); padding: 2px 8px; border-radius: 6px; border: 1px dashed rgba(56, 189, 248, 0.5); }
+        .quiz-hint-box { background: rgba(36, 47, 71, 0.3); border-left: 4px solid var(--accent-green); padding: 16px; border-radius: 0 12px 12px 0; margin: 24px 0; font-size: 16px; line-height: 1.6; }
+
+        /* ĐỊNH DẠNG NÚT TRẮC NGHIỆM ABCD */
+        .mc-option-btn {
+            background-color: var(--border-color) !important;
+            color: var(--text-primary) !important;
+            text-align: left !important;
+            padding: 16px !important;
+            font-weight: 500 !important;
+            font-size: 16px !important;
+            border-radius: 10px !important;
+            border: 1px solid transparent !important;
+            transition: all 0.2s ease !important;
+        }
+        .mc-option-btn:hover {
+            background-color: rgba(56, 189, 248, 0.08) !important;
+            border-color: var(--accent-blue) !important;
+            color: var(--accent-blue) !important;
+        }
+
+        /* SCROLLBOX CƠ SỞ DỮ LIỆU SIÊU TINH GỌN */
+        .search-box { margin-bottom: 20px; }
+        .db-scrollbox { max-height: 520px; overflow-y: auto; padding-right: 6px; }
+        .db-scrollbox::-webkit-scrollbar { width: 8px; }
+        .db-scrollbox::-webkit-scrollbar-track { background: transparent; }
+        .db-scrollbox::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+        .word-group-container { padding: 18px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s ease; }
+        .word-group-container:hover { background: rgba(56, 189, 248, 0.05); border-radius: 10px; }
+        .pos-badge { font-size: 12px; font-family: 'JetBrains Mono', monospace; background: rgba(56, 189, 248, 0.12); color: var(--accent-blue); padding: 2px 6px; border-radius: 4px; margin-right: 6px; font-weight: 600; }
+        .btn-delete { background: transparent; color: var(--accent-red); border: none; padding: 6px 12px; font-size: 14px; width: auto; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn-delete:hover { background: rgba(248, 113, 113, 0.1); border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+    <div class="workspace">
+        
+        <div class="full-width card header-section">
+            <div>
+                <h1>LEXICON ANALYTICS SYSTEM</h1>
+                <p style="color: var(--text-secondary); font-size: 16px; margin-top: 4px;">Hệ thống tối ưu từ vựng thông minh và ôn tập ngữ cảnh.</p>
+            </div>
+            <div style="min-width: 220px;">
+                <a href="overview.html" class="btn-link btn-secondary" style="padding: 12px 16px; font-size: 15px;">📊 Xem báo cáo chi tiết (Overview)</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><span>01 / Thêm từ vựng mới</span></h2>
+            <div class="form-group">
+                <label>Từ tiếng Anh (Có thể nhập biến thể dạng: Artifact / artefact)</label>
+                <input type="text" id="word" placeholder="Ví dụ: Artifact / artefact">
+                <div id="wordAlert" style="font-size: 14px; color: var(--accent-blue); margin-top: 8px; display: none; font-weight: 500;">
+                    💡 Từ này hoặc biến thể của nó đã tồn tại trong hệ thống!
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Từ loại</label>
+                <select id="partOfSpeech">
+                    <option value="Verb">Verb (Động từ)</option>
+                    <option value="Noun">Noun (Danh từ)</option>
+                    <option value="Adj">Adj (Tính từ)</option>
+                    <option value="Adv">Adv (Trạng từ)</option>
+                    <option value="Phrase">Phrase (Cụm từ / Thành ngữ)</option>
+                    <option value="Other">Other (Khác)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Nghĩa tiếng Việt (Theo ngữ cảnh này)</label>
+                <input type="text" id="meaning" placeholder="Ví dụ: Sự bộc phát, bùng nổ">
+            </div>
+            <div class="form-group">
+                <label>Câu ví dụ minh họa ngữ cảnh</label>
+                <textarea id="example" rows="3" placeholder="Nhập ví dụ..." onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); saveWord(); }"></textarea>
+            </div>
+            <button onclick="saveWord()">Nạp dữ liệu vào lõi</button>
+
+            <h2 style="margin-top: 40px; color: var(--accent-green);"><span>02 / Phiên ôn tập tự động</span></h2>
+            <button class="btn-secondary" onclick="startQuiz()">Kích hoạt bài kiểm tra ngẫu nhiên</button>
+        </div>
+
+        <div class="card">
+            <h2><span>03 / Cơ sở dữ liệu gốc</span></h2>
+            <input type="text" id="search" class="search-box" placeholder="🔍 Gõ từ tiếng Anh, tiếng Việt hoặc từ loại để tìm kiếm..." onkeyup="filterDatabase()">
+            
+            <div class="db-scrollbox" id="wordList"></div>
+        </div>
+
+    </div>
+
+    <div id="quizModal" class="modal-overlay">
+        <div class="modal-content" style="text-align: left; max-width: 650px;">
+            <div id="quizType" class="quiz-type-tag">MODE: FILL_IN_BLANK</div>
+            <div id="quizQuestion" style="min-height: 60px;"></div>
+            
+            <div id="quizInputArea">
+                <input type="text" id="quizAnswer" placeholder="Nhập đáp án phân tích..." autocomplete="off" style="margin-bottom: 16px;" onkeydown="if(event.key === 'Enter') checkAnswer()">
+                <button onclick="checkAnswer()" style="background-color: var(--accent-green); color: #0b0f19;">Xác thực đáp án</button>
+            </div>
+
+            <div id="quizFlashcardArea" style="display: none; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <button onclick="submitFlashcard(true)" style="background-color: var(--accent-green); color: #0b0f19;">Tôi đã thuộc từ này</button>
+                <button onclick="submitFlashcard(false)" style="background-color: var(--accent-red); color: white;">Chưa thuộc / Gõ sai</button>
+            </div>
+
+            <div id="quizMultipleChoiceArea" style="display: none; grid-template-columns: 1fr; gap: 12px;">
+                <button onclick="checkMultipleChoice(0)" id="btnOpt0" class="mc-option-btn">A</button>
+                <button onclick="checkMultipleChoice(1)" id="btnOpt1" class="mc-option-btn">B</button>
+                <button onclick="checkMultipleChoice(2)" id="btnOpt2" class="mc-option-btn">C</button>
+                <button onclick="checkMultipleChoice(3)" id="btnOpt3" class="mc-option-btn">D</button>
+            </div>
+            
+            <button class="btn-secondary" onclick="closeQuizModal()" style="margin-top: 20px; padding: 12px; font-size: 14px;">Tạm dừng ôn tập</button>
+        </div>
+    </div>
+
+    <div id="resultModal" class="modal-overlay">
+        <div class="modal-content">
+            <div id="modalIcon" class="modal-icon">🎉</div>
+            <div id="modalTitle" class="modal-title">XÁC THỰC THÀNH CÔNG</div>
+            <div id="modalBody" class="modal-body">Nội dung</div>
+            <button class="modal-btn" onclick="closeModal()">TIẾP TỤC HỌC</button>
+        </div>
+    </div>
+
+    <div id="viewWordModal" class="modal-overlay">
+        <div class="modal-content" style="text-align: left; max-width: 650px; max-height: 85vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 2px solid var(--border-color); padding-bottom: 12px;">
+                <h3 id="viewModalTitle" style="font-size: 28px; font-weight: 700; color: white;">Word</h3>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-secondary); background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px;">LEXICON CARD</span>
+            </div>
+            <div id="viewModalBody" style="margin-bottom: 12px;"></div>
+            <button class="btn-secondary" onclick="closeViewWordModal()" style="padding: 14px; font-size: 15px; font-weight: 600;">Đóng cửa sổ</button>
+        </div>
+    </div>
+
+    <script>
+        let dictionary = JSON.parse(localStorage.getItem('cleanDict_data')) || [];
+        let stats = JSON.parse(localStorage.getItem('cleanDict_stats')) || { correct: 0, total: 0 };
+        let quizHistory = JSON.parse(localStorage.getItem('cleanDict_quizHistory')) || [];
+
+        // HÀM TÁCH BIẾN THỂ (Hỗ trợ phân rã chuỗi "artifact / artefact" thành mảng các từ độc lập)
+        function getWordVariants(wordString) {
+            return wordString.split(/[\/,;]/).map(v => v.trim());
+        }
+
+        function checkExistingWord() {
+            const wordInput = document.getElementById('word').value.trim().toLowerCase();
+            const alertBox = document.getElementById('wordAlert');
+            if (!wordInput) { alertBox.style.display = 'none'; return; }
+            
+            const inputVariants = getWordVariants(wordInput).map(v => v.toLowerCase());
+            const isExist = dictionary.some(item => {
+                const existingVariants = getWordVariants(item.word).map(v => v.toLowerCase());
+                return inputVariants.some(iv => existingVariants.includes(iv));
+            });
+            alertBox.style.display = isExist ? 'block' : 'none';
+        }
+
+        document.getElementById('word').addEventListener('input', checkExistingWord);
+
+        function saveWord() {
+            const word = document.getElementById('word').value.trim();
+            const partOfSpeech = document.getElementById('partOfSpeech').value;
+            const meaning = document.getElementById('meaning').value.trim();
+            const example = document.getElementById('example').value.trim();
+            
+            if (!word || !meaning) {
+                alert("Yêu cầu nhập đầy đủ cấu trúc Từ vựng và Định nghĩa.");
+                return;
+            }
+
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            dictionary.push({ word, partOfSpeech, meaning, example, addedAt: todayStr });
+            localStorage.setItem('cleanDict_data', JSON.stringify(dictionary));
+
+            document.getElementById('word').value = '';
+            document.getElementById('meaning').value = '';
+            document.getElementById('example').value = '';
+            document.getElementById('partOfSpeech').selectedIndex = 0;
+            document.getElementById('wordAlert').style.display = 'none';
+
+            renderUI();
+        }
+
+        function deleteWord(originalIndex, wordKey) {
+            if(confirm("Xác nhận xóa nét nghĩa ngữ cảnh này khỏi hệ thống?")) {
+                dictionary.splice(originalIndex, 1);
+                localStorage.setItem('cleanDict_data', JSON.stringify(dictionary));
+                renderUI();
+                
+                const hasSenses = dictionary.some(item => getWordVariants(item.word)[0].toLowerCase() === wordKey.toLowerCase());
+                if (hasSenses) { openViewWordModal(wordKey); } else { closeViewWordModal(); }
+            }
+        }
+
+        function filterDatabase() {
+            const query = document.getElementById('search').value.toLowerCase().trim();
+            const blocks = document.querySelectorAll('.word-group-container');
+            blocks.forEach(block => {
+                const text = block.innerText.toLowerCase();
+                block.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        function openViewWordModal(firstVariantKey) {
+            const modal = document.getElementById('viewWordModal');
+            const titleElement = document.getElementById('viewModalTitle');
+            const bodyElement = document.getElementById('viewModalBody');
+
+            const sensesWithIndex = dictionary
+                .map((item, index) => ({ ...item, originalIndex: index }))
+                .filter(item => getWordVariants(item.word)[0].toLowerCase() === firstVariantKey.toLowerCase());
+
+            if (sensesWithIndex.length === 0) return;
+            titleElement.innerText = sensesWithIndex[0].word; 
+
+            let html = '';
+            sensesWithIndex.forEach((sense, index) => {
+                html += `
+                    <div style="margin-bottom: 24px; padding-bottom: 20px; ${index < sensesWithIndex.length - 1 ? 'border-bottom: 1px solid var(--border-color);' : ''}">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span class="pos-badge" style="font-size: 13px; padding: 4px 8px; margin: 0;">${sense.partOfSpeech || 'Other'}</span>
+                                <strong style="color: var(--accent-green); font-size: 19px; font-weight: 600;">${sense.meaning}</strong>
+                            </div>
+                            <button class="btn-delete" onclick="deleteWord(${sense.originalIndex}, '${firstVariantKey.replace(/'/g, "\\'")}')">Xóa</button>
+                        </div>
+                        ${sense.example ? `<div style="background: rgba(11, 15, 25, 0.6); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); font-family: 'JetBrains Mono', monospace; font-size: 15px; white-space: pre-wrap;">• ${sense.example}</div>` : ''}
+                    </div>
+                `;
+            });
+            bodyElement.innerHTML = html;
+            modal.classList.add('active');
+        }
+
+        function closeViewWordModal() { document.getElementById('viewWordModal').classList.remove('active'); }
+
+        function renderUI() {
+            const uniqueWordsSet = new Set(dictionary.map(item => getWordVariants(item.word)[0].toLowerCase()));
+            
+            const listContainer = document.getElementById('wordList');
+            listContainer.innerHTML = '';
+
+            if(dictionary.length === 0) {
+                listContainer.innerHTML = `<p style="color:var(--text-secondary); font-size:15px; text-align:center; padding: 20px;">Cơ sở dữ liệu trống.</p>`;
+                return;
+            }
+
+            const groupedDict = {};
+            dictionary.forEach(item => {
+                // Đóng nhóm dựa trên biến thể đầu tiên làm từ gốc mẹ
+                const standardizedKey = getWordVariants(item.word)[0].toLowerCase();
+                if (!groupedDict[standardizedKey]) {
+                    groupedDict[standardizedKey] = { displayWord: item.word, senses: [] };
+                }
+                groupedDict[standardizedKey].senses.push(item);
+            });
+
+            Object.entries(groupedDict).forEach(([standardizedKey, group]) => {
+                const groupBlock = document.createElement('div');
+                groupBlock.className = 'word-group-container';
+                groupBlock.setAttribute('onclick', `openViewWordModal('${standardizedKey.replace(/'/g, "\\'")}')`);
+                
+                const meaningsPreview = group.senses.map(s => s.meaning).join(' | ');
+
+                groupBlock.innerHTML = `
+                    <div style="flex: 1; padding-right: 16px; min-width: 0;">
+                        <div style="font-size: 20px; color: white; font-weight: 600; margin-bottom: 6px;">${group.displayWord}</div>
+                        <div style="color: var(--text-secondary); font-size: 15px; line-height: 1.5; white-space: normal;">${meaningsPreview}</div>
+                    </div>
+                    <span style="color: var(--border-color); font-size: 16px; font-weight: bold; flex-shrink: 0;" class="arrow-indicator">➔</span>
+                `;
+
+                groupBlock.onmouseover = function() { this.querySelector('.arrow-indicator').style.color = 'var(--accent-blue)'; };
+                groupBlock.onmouseout = function() { this.querySelector('.arrow-indicator').style.color = 'var(--border-color)'; };
+                listContainer.appendChild(groupBlock);
+            });
+        }
+
+        let currentWord = null;
+        let currentMode = 0; 
+        let currentOptions = []; 
+
+        function startQuiz() {
+            if (dictionary.length === 0) { alert("Hệ thống trống. Hãy nạp dữ liệu từ vựng trước."); return; }
+            document.getElementById('quizModal').classList.add('active');
+            document.getElementById('quizAnswer').value = '';
+            
+            const randomIndex = Math.floor(Math.random() * dictionary.length);
+            currentWord = dictionary[randomIndex];
+
+            const uniqueWordsCount = new Set(dictionary.map(item => getWordVariants(item.word)[0].toLowerCase())).size;
+            const uniqueMeaningsCount = new Set(dictionary.map(item => item.meaning.trim().toLowerCase())).size;
+
+            let availableModes = [1, 2]; 
+            if (currentWord.example) availableModes.push(0); 
+            if (uniqueWordsCount >= 4 && uniqueMeaningsCount >= 4) availableModes.push(3); 
+
+            currentMode = availableModes[Math.floor(Math.random() * availableModes.length)];
+
+            const typeTag = document.getElementById('quizType');
+            const qElement = document.getElementById('quizQuestion');
+            const inputArea = document.getElementById('quizInputArea');
+            const flashcardArea = document.getElementById('quizFlashcardArea');
+            const mcArea = document.getElementById('quizMultipleChoiceArea');
+
+            inputArea.style.display = 'none';
+            flashcardArea.style.display = 'none';
+            mcArea.style.display = 'none';
+
+            const posText = currentWord.partOfSpeech ? ` [${currentWord.partOfSpeech}]` : '';
+
+            if (currentMode === 0) {
+                inputArea.style.display = 'block';
+                typeTag.innerText = "MODE: CONTEXT_DECODING (ĐIỀN TỪ THEO NGỮ CẢNH)";
+                
+                // Thuật toán quét và ẩn TOÀN BỘ các biến thể từ vựng trong câu ví dụ
+                let hiddenEx = currentWord.example;
+                const variants = getWordVariants(currentWord.word);
+                variants.forEach(v => {
+                    const safeWord = v.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                    hiddenEx = hiddenEx.replace(new RegExp(safeWord, 'gi'), '<span class="quiz-blank">[ _ _ _ ]</span>');
+                });
+
+                qElement.innerHTML = `<div class="quiz-title-label">Điền từ thích hợp vào khoảng trống:</div><div class="quiz-question-text">${hiddenEx}</div><div class="quiz-hint-box"><span style="color: var(--accent-green); font-weight: 600;">Gợi ý nghĩa${posText}:</span> ${currentWord.meaning}</div>`;
+                setTimeout(() => document.getElementById('quizAnswer').focus(), 50);
+            } 
+            
+            else if (currentMode === 1) {
+                inputArea.style.display = 'block';
+                typeTag.innerText = "MODE: TRANSLATION_TO_EN (DỊCH NGHĨA KHỚP TỪ)";
+                qElement.innerHTML = `<div class="quiz-title-label">Hãy dịch ý nghĩa ngữ cảnh sau sang Tiếng Anh:</div><div class="quiz-question-text" style="text-align: center; font-size: 22px; font-weight: 600; color: white;">"${currentWord.meaning}"</div><div class="quiz-hint-box" style="text-align: center; border-left: none; border-top: 3px solid var(--accent-blue); border-radius: 0 0 12px 12px;"><span style="color: var(--accent-blue); font-weight: 600;">Từ loại yêu cầu:</span> ${currentWord.partOfSpeech || 'Other'}</div>`;
+                setTimeout(() => document.getElementById('quizAnswer').focus(), 50);
+            } 
+            
+            else if (currentMode === 2) {
+                flashcardArea.style.display = 'grid';
+                typeTag.innerText = "MODE: MEMORY_RETRIEVAL (FLASHCARD PHÂN TÍCH)";
+                qElement.innerHTML = `<div class="quiz-title-label">Bạn có nhớ ý nghĩa và cấu trúc ngữ cảnh của từ này không?</div><div class="quiz-question-text" style="text-align: center; font-size: 32px; font-weight: 700; color: var(--accent-blue);">${currentWord.word}</div><div style="margin-top: 16px; font-size: 14px; text-align: center; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace;">Từ loại: ${currentWord.partOfSpeech || 'Other'}</div><div style="margin-bottom: 24px;"></div>`;
+            } 
+            
+            else if (currentMode === 3) {
+                mcArea.style.display = 'grid';
+                typeTag.innerText = "MODE: MULTIPLE_CHOICE (TRẮC NGHIỆM ABCD)";
+                
+                qElement.innerHTML = `
+                    <div class="quiz-title-label">Chọn ý nghĩa chính xác nhất của từ vựng sau:</div>
+                    <div class="quiz-question-text" style="text-align: center; font-size: 30px; font-weight: 700; color: var(--accent-blue);">${currentWord.word}</div>
+                    <div style="margin-top: 12px; font-size: 14px; text-align: center; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace;">Từ loại: ${currentWord.partOfSpeech || 'Other'}</div>
+                    <div style="margin-bottom: 20px;"></div>
+                `;
+
+                let options = [{ meaning: currentWord.meaning, isCorrect: true }];
+                let pool = dictionary.filter(item => item.meaning.trim().toLowerCase() !== currentWord.meaning.trim().toLowerCase());
+                
+                let uniqueMeaningsPool = [];
+                let seenMeanings = new Set([currentWord.meaning.trim().toLowerCase()]);
+                pool.forEach(item => {
+                    let m = item.meaning.trim().toLowerCase();
+                    if (!seenMeanings.has(m)) {
+                        seenMeanings.add(m);
+                        uniqueMeaningsPool.push(item);
+                    }
+                });
+
+                uniqueMeaningsPool.sort(() => Math.random() - 0.5);
+                for (let i = 0; i < Math.min(3, uniqueMeaningsPool.length); i++) {
+                    options.push({ meaning: uniqueMeaningsPool[i].meaning, isCorrect: false });
+                }
+
+                options.sort(() => Math.random() - 0.5);
+                currentOptions = options;
+
+                const prefixes = ['A. ', 'B. ', 'C. ', 'D. '];
+                for (let i = 0; i < 4; i++) {
+                    const btn = document.getElementById(`btnOpt${i}`);
+                    btn.innerText = prefixes[i] + options[i].meaning;
+                }
+            }
+        }
+
+        function closeQuizModal() { document.getElementById('quizModal').classList.remove('active'); }
+
+        function openModal(isCorrect, title, message) {
+            const modal = document.getElementById('resultModal');
+            document.getElementById('modalIcon').innerText = isCorrect ? "🎉" : "😢";
+            const titleElement = document.getElementById('modalTitle');
+            titleElement.innerText = title;
+            titleElement.style.color = isCorrect ? "var(--accent-green)" : "var(--accent-red)";
+            document.getElementById('modalBody').innerHTML = message;
+            modal.classList.add('active');
+        }
+
+        function closeModal() { document.getElementById('resultModal').classList.remove('active'); startQuiz(); }
+
+        function logQuizResult(isCorrect) {
+            stats.total += 1;
+            if (isCorrect) stats.correct += 1;
+            localStorage.setItem('cleanDict_stats', JSON.stringify(stats));
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            quizHistory.push({ date: todayStr, isCorrect: isCorrect });
+            localStorage.setItem('cleanDict_quizHistory', JSON.stringify(quizHistory));
+        }
+
+        function checkAnswer() {
+            const ans = document.getElementById('quizAnswer').value.trim().toLowerCase();
+            
+            // Lấy toàn bộ danh sách các biến thể hợp lệ của từ khóa mục tiêu
+            const allowedVariants = getWordVariants(currentWord.word).map(v => v.toLowerCase());
+            
+            document.getElementById('quizModal').classList.remove('active');
+
+            // Cải tiến: Nếu từ người dùng nhập khớp với BẤT KỲ biến thể nào đều tính là ĐÚNG
+            if (allowedVariants.includes(ans)) {
+                logQuizResult(true);
+                openModal(true, "XÁC THỰC CHÍNH XÁC", `Hệ thống ghi nhận đáp án chính xác!<br><br><strong>Từ vựng:</strong> ${currentWord.word} (${currentWord.partOfSpeech || 'Other'})<br><strong>Ý nghĩa:</strong> ${currentWord.meaning}`);
+            } else {
+                logQuizResult(false);
+                openModal(false, "ĐÁP ÁN CHƯA ĐÚNG", `Ngữ cảnh này yêu cầu các từ biến thể: <strong style="color:white; font-size:22px;">${currentWord.word}</strong><br><br>Bạn đã nhập: <span style="color:var(--accent-red);">${ans || '(Để trống)'}</span>`);
+            }
+            renderUI();
+        }
+
+        function submitFlashcard(isCorrect) {
+            document.getElementById('quizModal').classList.remove('active');
+            logQuizResult(isCorrect);
+            if(isCorrect) {
+                openModal(true, "ĐÃ THUỘC TỪ VỰNG", `Tuyệt vời! Tiếp tục phát huy nhé.<br><br><strong>${currentWord.word}</strong>: ${currentWord.meaning}`);
+            } else {
+                openModal(false, "CẦN ÔN TẬP LẠI", `Đã ghi nhận lại thuật toán ôn tập.<br><br>Hãy ghi nhớ: <strong>${currentWord.word}</strong> nghĩa là <strong>${currentWord.meaning}</strong>`);
+            }
+            renderUI();
+        }
+
+        function checkMultipleChoice(index) {
+            document.getElementById('quizModal').classList.remove('active');
+            const selectedOpt = currentOptions[index];
+
+            if (selectedOpt.isCorrect) {
+                logQuizResult(true);
+                openModal(true, "XÁC THỰC CHÍNH XÁC", `Tuyệt vời! Bạn đã chọn hoàn toàn chính xác đáp án trắc nghiệm.<br><br><strong>Từ vựng:</strong> ${currentWord.word} (${currentWord.partOfSpeech || 'Other'})<br><strong>Ý nghĩa:</strong> ${currentWord.meaning}`);
+            } else {
+                logQuizResult(false);
+                openModal(false, "ĐÁP ÁN CHƯA ĐÚNG", `Lựa chọn chưa chính xác.<br><br>Từ <strong style="color:white;">${currentWord.word}</strong> chính xác mang ý nghĩa là:<br><strong style="color:var(--accent-green); font-size:22px;">${currentWord.meaning}</strong><br><br>Bạn đã chọn nhầm sang nghĩa của từ khác: <span style="color:var(--accent-red);">${selectedOpt.meaning}</span>`);
+            }
+            renderUI();
+        }
+
+        renderUI();
+    </script>
+</body>
+</html>
